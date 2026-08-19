@@ -7,8 +7,7 @@ import { Pool } from "pg";
 export interface Customer {
   id: number;
   name: string;
-  email: string | null;
-  status: string; // present only after the db-migration lands
+  status?: string; // present only after the db-migration lands (via findByStatus)
   created_at: Date;
 }
 
@@ -23,16 +22,24 @@ const pool = new Pool({
 export class CustomerRepo {
   async list(): Promise<Customer[]> {
     const { rows } = await pool.query(
-      "SELECT id, name, email, status, created_at FROM customers ORDER BY id",
+      "SELECT id, name, created_at FROM customers ORDER BY id",
     );
     return rows;
   }
 
   async findById(id: number): Promise<Customer | null> {
     const { rows } = await pool.query(
-      "SELECT id, name, email, status, created_at FROM customers WHERE id = $1",
+      "SELECT id, name, created_at FROM customers WHERE id = $1",
       [id],
     );
     return rows[0] ?? null;
+  }
+
+  async findByStatus(status: string): Promise<Customer[]> {
+    const { rows } = await pool.query(
+      "SELECT id, name, status, created_at FROM customers WHERE status = $1 ORDER BY id",
+      [status],
+    );
+    return rows;
   }
 }
