@@ -1,6 +1,6 @@
 // A small payments service. The `customers` table lives in Postgres
-// (see schema/001_init.sql). The migration demo adds a `status` column;
-// this repository grows a method that DEPENDS on it — so the feature
+// (see schema/001_init.sql). The demo's migration adds a `status` column;
+// the agent's new findByStatus method DEPENDS on it — so the feature
 // cannot land until the governed migration does.
 import { Pool } from "pg";
 
@@ -33,13 +33,5 @@ export class CustomerRepo {
       [id],
     );
     return rows[0] ?? null;
-  }
-
-  async findByStatus(status: string): Promise<Customer[]> {
-    const { rows } = await pool.query(
-      "SELECT id, name, status, created_at FROM customers WHERE status = $1 ORDER BY id",
-      [status],
-    );
-    return rows;
   }
 }

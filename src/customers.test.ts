@@ -14,10 +14,4 @@ describe("CustomerRepo", () => {
     expect(c).not.toBeNull();
     expect(c!.name.length).toBeGreaterThan(0);
   });
-
-  it("returns customers by status", async () => {
-    const customers = await repo.findByStatus("active");
-    expect(customers.length).toBeGreaterThanOrEqual(3);
-    expect(customers.every((c) => c.status === "active")).toBe(true);
-  });
 });
