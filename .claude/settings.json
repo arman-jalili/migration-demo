@@ -12,5 +12,32 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx jest:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker compose up:*)",
+      "Bash(npm run db:*)",
+      "Bash(git:*)",
+      "Bash(node:*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "deny": [
+      "Bash(psql:*)",
+      "Bash(pg_dump:*)",
+      "Bash(pg_restore:*)",
+      "Bash(docker exec *rgx-migration-db*psql*)",
+      "Bash(ALTER TABLE*)"
+    ]
   }
 }
