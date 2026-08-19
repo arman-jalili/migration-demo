@@ -1,0 +1,50 @@
+id = "db-migration"
+name = "db-migration"
+description = "Governed migration runbook: validate → backup → MIGRATE (human-gated) → verify → switch. Adds customers.email."
+version = "1.0.0"
+tags = ["migration", "postgres", "runbook", "governed-handoff"]
+
+[[nodes]]
+id = "validate"
+name = "validate-preconditions"
+description = "Verify the customers table exists and email column is absent"
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/validate.sh"
+
+[[nodes]]
+id = "backup"
+name = "backup"
+description = "pg_dump the payments database before any destructive step"
+depends_on = ["validate"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/backup.sh"
+
+[[nodes]]
+id = "migrate"
+name = "migrate"
+description = "ALTER TABLE customers ADD COLUMN email — DESTRUCTIVE, requires human approval"
+depends_on = ["backup"]
+requires_approval = true
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/migrate.sh"
+
+[[nodes]]
+id = "verify"
+name = "verify"
+description = "Confirm customers.email exists"
+depends_on = ["migrate"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/verify.sh"
+
+[[nodes]]
+id = "switch"
+name = "switch"
+description = "Record the migration in migration_log (only if the column landed)"
+depends_on = ["verify"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/switch.sh"

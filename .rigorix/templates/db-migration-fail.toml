@@ -1,0 +1,49 @@
+id = "db-migration-fail"
+name = "db-migration-fail"
+description = "Failure scene: a migration that cannot land (NOT NULL on a non-empty table) — evidence records every failed step, nothing switches"
+version = "1.0.0"
+tags = ["migration", "postgres", "runbook", "failure"]
+
+[[nodes]]
+id = "validate"
+name = "validate-preconditions"
+description = "Verify the customers table exists and email column is absent"
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/validate.sh"
+
+[[nodes]]
+id = "backup"
+name = "backup"
+description = "pg_dump the payments database"
+depends_on = ["validate"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/backup.sh"
+
+[[nodes]]
+id = "migrate"
+name = "migrate"
+description = "ALTER TABLE customers ADD COLUMN email TEXT NOT NULL — WILL FAIL on non-empty table"
+depends_on = ["backup"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/migrate-fail.sh"
+
+[[nodes]]
+id = "verify"
+name = "verify"
+description = "Confirm customers.email exists"
+depends_on = ["migrate"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/verify.sh"
+
+[[nodes]]
+id = "switch"
+name = "switch"
+description = "Record the migration in migration_log (honest switch — fails if column absent)"
+depends_on = ["verify"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/switch.sh"

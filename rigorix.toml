@@ -1,0 +1,11 @@
+# migration-demo — local-only Rigorix configuration.
+#
+# No audit backend, no enforcement backend, no LLM key: every run stays on
+# this machine. The only external dependency is a local docker postgres.
+#
+# `permission_mode` gates every tool call to the workspace (the safe default).
+# `audit_hmac_key` signs each audit envelope locally (HMAC-SHA256) so the
+# signed-evidence contract works even without a backend to post to.
+
+permission_mode = "workspace_write"
+audit_hmac_key = "migration-demo-hmac-key"

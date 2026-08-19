@@ -1,0 +1,22 @@
+id = "db-rollback"
+name = "db-rollback"
+description = "Rollback runbook: restore the database from the latest backup and verify the pre-migration state"
+version = "1.0.0"
+tags = ["migration", "postgres", "runbook", "rollback"]
+
+[[nodes]]
+id = "restore"
+name = "restore"
+description = "Restore from the latest /backups/payments_*.sql dump"
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/restore.sh"
+
+[[nodes]]
+id = "verify-restored"
+name = "verify-restored"
+description = "Confirm customers.email is absent — pre-migration state restored"
+depends_on = ["restore"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/verify-restored.sh"
