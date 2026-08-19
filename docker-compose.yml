@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rgx-migration-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payments
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./schema/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+      - pg_backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payments"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pg_backups:

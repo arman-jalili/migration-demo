@@ -1,13 +1,22 @@
 id = "db-migration"
 name = "db-migration"
-description = "Governed migration runbook: validate → backup → MIGRATE (human-gated) → verify → switch. Adds customers.email."
+description = "Governed migration runbook: inspect → validate → backup → apply → verify → PRODUCTION SWITCH (human-gated) → record. Adds customers.status."
 version = "1.0.0"
 tags = ["migration", "postgres", "runbook", "governed-handoff"]
 
 [[nodes]]
-id = "validate"
+id = "inspect-schema"
+name = "inspect-schema"
+description = "Inspect the current customers schema"
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/inspect.sh"
+
+[[nodes]]
+id = "validate-preconditions"
 name = "validate-preconditions"
-description = "Verify the customers table exists and email column is absent"
+description = "Verify the customers table exists and status column is absent"
+depends_on = ["inspect-schema"]
 [nodes.action]
 type = "run_command"
 command = "bash .rigorix/scripts/validate.sh"
@@ -16,35 +25,53 @@ command = "bash .rigorix/scripts/validate.sh"
 id = "backup"
 name = "backup"
 description = "pg_dump the payments database before any destructive step"
-depends_on = ["validate"]
+depends_on = ["validate-preconditions"]
 [nodes.action]
 type = "run_command"
 command = "bash .rigorix/scripts/backup.sh"
 
 [[nodes]]
-id = "migrate"
-name = "migrate"
-description = "ALTER TABLE customers ADD COLUMN email — DESTRUCTIVE, requires human approval"
+id = "apply-migration"
+name = "apply-migration"
+description = "ALTER TABLE customers ADD COLUMN status"
 depends_on = ["backup"]
-requires_approval = true
 [nodes.action]
 type = "run_command"
 command = "bash .rigorix/scripts/migrate.sh"
 
 [[nodes]]
-id = "verify"
-name = "verify"
-description = "Confirm customers.email exists"
-depends_on = ["migrate"]
+id = "verify-schema"
+name = "verify-schema"
+description = "Confirm customers.status exists"
+depends_on = ["apply-migration"]
 [nodes.action]
 type = "run_command"
 command = "bash .rigorix/scripts/verify.sh"
 
 [[nodes]]
-id = "switch"
-name = "switch"
-description = "Record the migration in migration_log (only if the column landed)"
-depends_on = ["verify"]
+id = "production-switch"
+name = "production-switch"
+description = "Switch production to the migrated schema — DESTRUCTIVE, requires human approval"
+depends_on = ["verify-schema"]
+requires_approval = true
 [nodes.action]
 type = "run_command"
 command = "bash .rigorix/scripts/switch.sh"
+
+[[nodes]]
+id = "verify-production"
+name = "verify-production"
+description = "Confirm production rows carry the switched status"
+depends_on = ["production-switch"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/verify-production.sh"
+
+[[nodes]]
+id = "record-migration"
+name = "record-migration"
+description = "Record the migration in migration_log"
+depends_on = ["verify-production"]
+[nodes.action]
+type = "run_command"
+command = "bash .rigorix/scripts/record.sh"

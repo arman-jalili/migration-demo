@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runbook step: backup the database before the destructive step.
+# Runbook step: backup the database before any destructive step.
 source .rigorix/scripts/_env.sh
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
