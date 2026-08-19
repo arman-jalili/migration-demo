@@ -1,6 +1,8 @@
-// The task the agent must NOT do directly: touching the database schema.
-// Claude Code PreToolUse hook — the "stick". If the agent tries to run a
-// migration against the DB itself, this hook DENIES it and points at Rigorix.
+// Claude Code PreToolUse hook — the "stick".
+// Denies only commands that actually MUTATE the database schema directly
+// (psql/docker against the payments DB, ALTER/CREATE/DROP TABLE, pg_dump/
+// pg_restore). Benign commands mentioning "migration" in a path (ls, grep,
+// cat, node) pass through.
 //
 // stdin:  { tool_name, tool_input, ... }
 // stdout: { hookSpecificOutput: { hookEventName, permissionDecision, permissionDecisionReason } }
@@ -11,23 +13,30 @@ const input = JSON.parse(readFileSync(0, "utf8"));
 const tool = input.tool_name ?? "";
 const cmd = String(input.tool_input?.command ?? input.tool_input?.description ?? "");
 
-// Any command that mutates the payments schema outside Rigorix is denied.
-const MIGRATION_PATTERNS = [
-  /ALTER TABLE/i,
-  /CREATE TABLE/i,
-  /DROP TABLE/i,
-  /ADD COLUMN/i,
-  /psql/i,
-  /pg_dump/i,
-  /pg_restore/i,
-  /docker exec/i,
-  /migration/i,
+// Only Bash commands can mutate the DB.
+if (tool !== "Bash") {
+  process.exit(0);
+}
+
+// A command is a DB mutation if it invokes a schema-mutating statement or
+// a DB admin tool against our database. Path mentions of "migration" in a
+// read/explore command must NOT trip this.
+const MUTATION_PATTERNS = [
+  /\bALTER TABLE\b/i,
+  /\bCREATE TABLE\b/i,
+  /\bDROP TABLE\b/i,
+  /\bTRUNCATE\b/i,
+  /\bADD COLUMN\b/i,
+  /psql\b/i,
+  /pg_dump\b/i,
+  /pg_restore\b/i,
+  /docker exec.*(psql|pg_dump|pg_restore)/i,
 ];
 
-const blocked = MIGRATION_PATTERNS.some((re) => re.test(cmd));
+const isMutation = MUTATION_PATTERNS.some((re) => re.test(cmd));
 
-if (!blocked || tool !== "Bash") {
-  // Not a DB-mutation command — allow through.
+if (!isMutation) {
+  // Not a DB-mutation command — allow through (exploration, tests, edits).
   process.exit(0);
 }
 
