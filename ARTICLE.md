@@ -9,35 +9,35 @@ Not a firewall. Not an API gateway. Not a log aggregator. Those observe what alr
 
 ## The scenario
 
-A payments service runs on Postgres. A migration needs to land: `ALTER TABLE customers ADD COLUMN email TEXT`.
+A payments service runs on Postgres. A migration needs to land: `ALTER TABLE customers ADD COLUMN status TEXT`.
 
 A coding agent — Claude Code, Cursor, any MCP-capable assistant — initiates the migration. Under Rigorix that is not a free action. It is a **governed handoff**: the agent's intent is compiled into a template-constrained runbook, and Rigorix takes over the execution.
 
 ## Watch it stop
 
-The runbook is five nodes. The third one is gated:
+The runbook is eight nodes. The sixth one is gated:
 
 ```
-validate-preconditions ──▶ backup ──▶ migrate [REQUIRES APPROVAL] ──▶ verify ──▶ switch
+inspect-schema ──▶ validate-preconditions ──▶ backup ──▶ apply-migration ──▶ verify-schema ──▶ production-switch [REQUIRES APPROVAL] ──▶ verify-production ──▶ record-migration
 ```
 
-The agent runs the first two nodes. Validate passes. The backup lands — a real `pg_dump` of the real database.
+The first five nodes run: inspect, validate, backup, apply-migration, verify-schema. The backup is a real `pg_dump`; the migration is a real `ALTER TABLE` — applied in a reversible prepare phase.
 
-Then execution **stops** at `migrate`. The step is marked `requires_approval = true`. The `ALTER TABLE` does not run.
+Then execution **stops** at `production-switch` — the step that back-fills `status` on the live rows and exposes the new schema to production. It is marked `requires_approval = true`. The switch does not run.
 
-While it is paused, I query the live database: the `email` column does not exist. The migration has not landed. That is not a warning. That is a **stop** — a deterministic pause in execution, proven with live queries.
+While it is paused, I query the live database: the `status` column exists — prepared but empty — and no row carries a value. Production is untouched; the destructive back-fill has not run. That is not a warning. That is a **stop** — a deterministic pause in execution, proven with live queries.
 
 ## Watch it resume
 
 A human — an engineer, an on-call, a DBA — looks at the pending step and says yes.
 
-Execution resumes. The migration lands. Verify confirms the column. Switch records it in the migration log. Every step, including the pause and the approval, is in a signed audit envelope: execution id, status, per-step durations, and an HMAC-SHA256 signature over the canonical fields.
+Execution resumes. The switch back-fills `status = 'active'` on the live rows. Verify-production confirms them. Record writes the migration to the log. Every step, including the pause and the approval, is in a signed audit envelope: execution id, status, per-step durations, and an HMAC-SHA256 signature over the canonical fields.
 
 That envelope is the artifact you hand to an auditor. Not a screenshot of a dashboard — a signed, timestamped, step-level record of what ran and who said yes.
 
 ## Watch it fail
 
-Then the demo shows what happens when a migration *cannot* land: `ALTER TABLE ... ADD COLUMN email TEXT NOT NULL` on a table with three existing rows. Postgres refuses — a real, realistic failure.
+Then the demo shows what happens when a migration *cannot* land: `ALTER TABLE ... ADD COLUMN status TEXT NOT NULL` on a table with three existing rows. Postgres refuses — a real, realistic failure.
 
 The runbook fails. The evidence records **exactly** which step failed and why. The `switch` node refuses to run because the migration never landed. Nothing is half-applied.
 

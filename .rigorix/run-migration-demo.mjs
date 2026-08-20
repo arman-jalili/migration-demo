@@ -7,9 +7,11 @@
  *  bounded, approved, auditable runbook."  (F-20260819-02)
  *
  * Scene A — the gated migration:
- *   agent initiates a DB migration → rigorix compiles the runbook (validate →
- *   backup → migrate → verify → switch) → execution pauses at the destructive
- *   ALTER TABLE → a human approves → the runbook finishes → signed evidence.
+ *   agent initiates a DB migration → rigorix compiles the runbook (inspect →
+ *   validate → backup → apply-migration → verify-schema → production-switch
+ *   [REQUIRES APPROVAL] → verify-production → record-migration) → execution
+ *   pauses at the destructive production switch → a human approves → the
+ *   runbook finishes → signed evidence.
  *
  * Scene B — rollback as an executable path:
  *   a migration that cannot land (NOT NULL on a non-empty table) fails loudly,
@@ -115,7 +117,7 @@ async function main() {
     console.log("  Template:  " + p.template_name);
     console.log("  DAG nodes (" + (p.graph?.node_count ?? 0) + "):");
     for (const n of p.graph?.nodes ?? []) {
-      const gated = n.name === "migrate" ? "   [GATED] requires_approval — DESTRUCTIVE STEP" : "";
+      const gated = n.name === "production-switch" ? "   [GATED] requires_approval — DESTRUCTIVE STEP (back-fills live rows)" : "";
       console.log("    - " + n.name.padEnd(22) + " " + n.tool + gated);
     }
   } catch { show(plan); }
@@ -132,19 +134,21 @@ async function main() {
   const ra = showSteps(runA);
 
   if (ra?.status !== "PendingApproval") {
-    console.log("\n⚠ Expected PendingApproval — did the migrate step get gated?");
+    console.log("\n⚠ Expected PendingApproval — did the production-switch step get gated?");
     console.log("  Is rigorix-mcp >= 1.1.0 with the sequential-step + approval propagation fix?");
   } else {
-    console.log("\n  → PAUSED for human approval. The destructive step (migrate → ALTER TABLE)");
-    console.log("    was NOT run. Evidence already records validate + backup.");
+    console.log("\n  → PAUSED for human approval. The prepare phase ran (inspect → validate →");
+    console.log("    backup → apply-migration → verify-schema). The DESTRUCTIVE step");
+    console.log("    (production-switch — back-fills status on live rows) was NOT run.");
   }
 
-  section("5 · While paused — prove the database is untouched");
+  section("5 · While paused — prove production is untouched");
   showSchema("still");
-  console.log("  The migration has NOT landed. No ALTER TABLE happened. That is the stop.");
+  console.log("  The schema is prepared but production is untouched: no row carries a");
+  console.log("  status value, no switch has run. That is the stop.");
 
   section("6 · A HUMAN SAYS YES: rigorix_approve_execution");
-  const approve = await rpc("tools/call", { name: "rigorix_approve_execution", arguments: { execution_id: ra.execution_id, step_names: ["migrate"] } });
+  const approve = await rpc("tools/call", { name: "rigorix_approve_execution", arguments: { execution_id: ra.execution_id, step_names: ["production-switch"] } });
   show(approve);
 
   section("7 · After — the runbook finished");
