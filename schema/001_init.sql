@@ -1,5 +1,5 @@
 -- migration-demo baseline schema (payments database)
--- Three customers, no email column yet — the migration adds it.
+-- Three customers, no status column yet — the migration adds it.
 
 CREATE TABLE IF NOT EXISTS customers (
   id         SERIAL PRIMARY KEY,

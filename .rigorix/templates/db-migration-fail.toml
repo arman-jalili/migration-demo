@@ -7,7 +7,7 @@ tags = ["migration", "postgres", "runbook", "failure"]
 [[nodes]]
 id = "validate"
 name = "validate-preconditions"
-description = "Verify the customers table exists and email column is absent"
+description = "Verify the customers table exists and status column is absent"
 [nodes.action]
 type = "run_command"
 command = "bash .rigorix/scripts/validate.sh"
@@ -24,7 +24,7 @@ command = "bash .rigorix/scripts/backup.sh"
 [[nodes]]
 id = "migrate"
 name = "migrate"
-description = "ALTER TABLE customers ADD COLUMN email TEXT NOT NULL — WILL FAIL on non-empty table"
+description = "ALTER TABLE customers ADD COLUMN status TEXT NOT NULL — WILL FAIL on non-empty table"
 depends_on = ["backup"]
 [nodes.action]
 type = "run_command"
@@ -33,7 +33,7 @@ command = "bash .rigorix/scripts/migrate-fail.sh"
 [[nodes]]
 id = "verify"
 name = "verify"
-description = "Confirm customers.email exists"
+description = "Confirm customers.status exists"
 depends_on = ["migrate"]
 [nodes.action]
 type = "run_command"

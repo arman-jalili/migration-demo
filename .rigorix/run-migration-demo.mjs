@@ -170,7 +170,7 @@ async function main() {
   // ── Scene B: rollback as an executable path ──────────────────────────────
   section("8 · ROLLBACK SCENE — a migration that cannot land");
   console.log("  Reset to baseline, then run a migration with a real failure:");
-  console.log("  ALTER TABLE ... ADD COLUMN email TEXT NOT NULL on a non-empty table.");
+  console.log("  ALTER TABLE ... ADD COLUMN status TEXT NOT NULL on a non-empty table.");
   spawnSync("bash", [".rigorix/scripts/setup-db.sh"], { cwd: repoRoot, encoding: "utf8", stdio: "ignore" });
   showSchema("baseline (reset)");
   const runB = await rpc("tools/call", { name: "rigorix_run", arguments: { template_name: "db-migration-fail" } });

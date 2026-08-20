@@ -15,7 +15,7 @@ command = "bash .rigorix/scripts/restore.sh"
 [[nodes]]
 id = "verify-restored"
 name = "verify-restored"
-description = "Confirm customers.email is absent — pre-migration state restored"
+description = "Confirm customers.status is absent — pre-migration state restored"
 depends_on = ["restore"]
 [nodes.action]
 type = "run_command"
