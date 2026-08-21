@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "rigorix-mcp": {
-      "command": "/Users/arman/.cargo/bin/rigorix-mcp",
+      "command": "rigorix-mcp",
       "args": [],
       "env": {}
     }
