@@ -18,7 +18,7 @@
  *   the evidence shows exactly which step failed, and the rollback runbook
  *   restores the pre-migration state from the backup taken before the run.
  *
- * Requires: rigorix-mcp (>= 1.1.0 with sequential-step fix) on PATH, docker.
+ * Requires: rigorix-mcp (>= 1.2.0, via `cargo install rigorix-mcp`) on PATH, docker.
  *   node .rigorix/run-migration-demo.mjs
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -135,7 +135,7 @@ async function main() {
 
   if (ra?.status !== "PendingApproval") {
     console.log("\n⚠ Expected PendingApproval — did the production-switch step get gated?");
-    console.log("  Is rigorix-mcp >= 1.1.0 with the sequential-step + approval propagation fix?");
+    console.log("  Is rigorix-mcp >= 1.2.0 installed with the sequential-step + approval propagation fix?");
   } else {
     console.log("\n  → PAUSED for human approval. The prepare phase ran (inspect → validate →");
     console.log("    backup → apply-migration → verify-schema). The DESTRUCTIVE step");

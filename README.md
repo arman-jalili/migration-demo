@@ -62,4 +62,4 @@ The rollback runbook restores the database from the backup taken *before* the ru
 - **Driver** (`.rigorix/run-migration-demo.mjs`) — a minimal stdio MCP client that talks to `rigorix-mcp` and prints a clean, reproducible transcript.
 - **Config** (`rigorix.toml`) — local-only: `permission_mode = "workspace_write"`, `audit_hmac_key` set so envelopes are signed locally.
 
-Requires `rigorix-mcp >= 1.1.0` with the sequential-step fix (steps execute in template order, `[[nodes]]` templates propagate `requires_approval`), Docker, and nothing else.
+Requires `rigorix-mcp >= 1.2.0` (installed via `cargo install rigorix-mcp`; budget enforcement on template runs + approval propagation), Docker, and nothing else.
