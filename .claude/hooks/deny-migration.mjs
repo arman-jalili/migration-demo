@@ -1,15 +1,20 @@
 // Claude Code PreToolUse hook — the "stick".
 //
 // SCOPE (documented boundary — read this before relying on the hook):
-//   This hook governs AGENT-MEDIATED tool calls in Claude Code: it denies
-//   direct DB-mutation commands (psql / pg_dump / pg_restore / docker exec
-//   against the payments DB) and Node/Python scripts that open a DB client
-//   with write intents. It does NOT govern arbitrary code execution with
-//   real credentials outside the agent session (a shell a human already
-//   controls, a CI runner, a background process). That is a sandbox/secrets
-//   boundary, not a hook boundary. The demo's guarantee is: an agent cannot
-//   silently mutate the payments schema from a Claude Code tool call; if it
-//   needs a migration, it must hand off to Rigorix (rigorix_run).
+//   This hook governs AGENT-MEDIATED tool calls in Claude Code: it blocks
+//   DIRECT DB-TOOL INVOCATION (psql / pg_dump / pg_restore / mysql / sqlite3 /
+//   docker exec against the payments DB) — read OR write. That is deliberate:
+//   parsing a `psql -c` string to tell a read from a write is fragile (chained
+//   statements, `psql -f` files), so the boundary is "no direct DB tools — use
+//   Rigorix", not "no direct DB writes". Read-only inspection IS allowed via a
+//   Node/Python script that opens a DB client with no write intents (this file
+//   scans the script; read-only queries pass, write-intent SQL is denied).
+//   It does NOT govern arbitrary code execution with real credentials outside
+//   the agent session (a shell a human already controls, a CI runner, a
+//   background process). That is a sandbox/secrets boundary, not a hook
+//   boundary. The demo's guarantee is: an agent cannot silently mutate the
+//   payments schema from a Claude Code tool call; if it needs a migration, it
+//   must hand off to Rigorix (rigorix_run).
 //
 //   This is the first line of a known arms race (Shield changelog dynamic):
 //   a smarter agent could write a script that hides its intent. We scan the

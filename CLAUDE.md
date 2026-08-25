@@ -11,12 +11,18 @@ bounded, approved, auditable runbooks** — not by the agent directly.
 
 ## What the agent MUST hand off to Rigorix
 
-Database schema changes (migrations) are critical. A PreToolUse hook denies
-**direct DB-mutation tool calls**: psql / pg_dump / pg_restore / docker exec
-against the payments DB, and Node/Python scripts that open a DB client with
-write intents (ALTER/CREATE/DROP/TRUNCATE/INSERT/UPDATE/DELETE). Read-only
-inspection (queries, column listing) is allowed. When a task requires a
-migration, use the Rigorix MCP tools instead:
+Database schema changes (migrations) are critical. A PreToolUse hook blocks
+**direct DB-tool invocation, period** — psql / pg_dump / pg_restore / mysql /
+sqlite3 / docker exec against the payments DB, whether the command reads or
+writes. This is deliberate: parsing a `psql -c` string to tell a read from a
+write is fragile (chained statements, `psql -f` files), so the boundary is
+"no direct DB tools — use Rigorix", not "no direct DB writes".
+
+Read-only inspection IS allowed, but via the sanctioned path: a Node/Python
+script that opens a DB client (pg/psycopg/sqlalchemy) with **no write
+intents** (no ALTER/CREATE/DROP/TRUNCATE/INSERT/UPDATE/DELETE) — the hook
+scans the script and lets read-only inspection through. When a task requires
+a migration, use the Rigorix MCP tools instead:
 
 1. `rigorix_run` with `template_name: "db-migration"` — executes the governed
    runbook: inspect → validate → backup → **production switch (APPROVAL
@@ -49,6 +55,6 @@ govern arbitrary code execution with real credentials outside the session
 sandbox/secrets boundary, not a hook boundary. The guarantee is: an agent
 cannot silently mutate the payments schema from a Claude Code tool call; a
 migration must hand off to Rigorix. This is a known arms race — the hook
-scans the obvious surfaces (DB tools + script write intents), it is not an
+scans the obvious surfaces (direct DB tools + script write intents), it is not an
 airtight sandbox. Say exactly that to customers; do not imply more coverage
 than exists.

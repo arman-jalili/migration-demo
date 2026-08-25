@@ -50,8 +50,36 @@ The rollback runbook restores the database from the backup taken *before* the ru
 ## What the demo is *not*
 
 - Not a simulation. The `ALTER TABLE` is real; the backup is a real `pg_dump`; the failure is Postgres refusing a real statement.
-- Not a video. One command, run on a real machine, in the open — same principle as the payments-demo boundary demo.
+- Not a video. One command, run on a real machine, in the open.
 - Not a dashboard. The human approval surface is the `rigorix_approve_execution` tool — the same tool an agent or a human would call.
+
+---
+
+## The enforcement boundary (read this before running an agent in here)
+
+A PreToolUse hook in `.claude/settings.json` makes the handoff real, not
+voluntary. What it does and doesn't do — say this plainly, to customers and
+to anyone running the demo:
+
+- **Direct DB-tool invocation is blocked, read or write.** `psql`, `pg_dump`,
+  `pg_restore`, `mysql`, `sqlite3`, and `docker exec` against the payments DB
+  are denied whether the command reads or writes. That is deliberate: parsing
+a `psql -c` string to tell a read from a write is fragile (chained
+statements, `psql -f` files), so the boundary is "no direct DB tools — use
+Rigorix", not "no direct DB writes".
+- **Read-only inspection is allowed via scripts.** A Node/Python script that
+  opens a DB client with no write intents (no
+  ALTER/CREATE/DROP/TRUNCATE/INSERT/UPDATE/DELETE) passes the hook — that's
+the sanctioned way for an agent to look at the schema.
+- **It governs agent tool calls, not arbitrary code with credentials.** A
+  shell a human already controls, a CI runner, a background process — those
+  are outside the hook's scope; that is a sandbox/secrets boundary. The
+guarantee is: an agent cannot silently mutate the payments schema from a
+Claude Code tool call; a migration must hand off to Rigorix.
+- **It is a known arms race, not an airtight sandbox.** The hook scans the
+  obvious surfaces (direct DB tools + script write intents). A determined
+  adversary could hide intent further. Do not imply more coverage than
+exists.
 
 ---
 
