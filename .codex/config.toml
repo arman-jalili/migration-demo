@@ -13,10 +13,11 @@
 approval_policy = "never"
 
 [mcp_servers.rigorix-mcp]
-command = "/Users/arman/.cargo/bin/rigorix-mcp"
+command = "rigorix-mcp"
 args = []
-# Runbook steps are relative to rigorix.toml in the repo root.
-cwd = "/Users/arman/project/migration-demo"
+# Resolved from PATH, like .mcp.json does for Claude Code. The stdio server
+# inherits the session working directory, so runbook steps (relative to
+# rigorix.toml) resolve correctly when Codex runs from the repo root.
 # Auto-approve Rigorix tool calls: rigorix-mcp's tools carry no read-only
 # annotations, so Codex's default `auto` mode treats them as needing approval
 # when the permission profile is managed, and `approval_policy = "never"`

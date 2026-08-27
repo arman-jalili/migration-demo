@@ -54,11 +54,10 @@ column now exists.
 
 ## Codex-specific setup notes
 
-- MCP: `[mcp_servers.rigorix-mcp]` in `.codex/config.toml`, pointing at the
-  cargo-installed `rigorix-mcp` binary with the repo root as `cwd`. The same
-  server is also registered in `~/.codex/config.toml` so the desktop app's MCP
-  server list shows it in every project; the repo copy keeps the setup
-  self-contained for anyone who clones it.
+- MCP: `[mcp_servers.rigorix-mcp]` in `.codex/config.toml` resolves
+  `rigorix-mcp` from `PATH`, the same way `.mcp.json` does for Claude Code.
+  Cloning this repo is enough; the only requirement is `rigorix-mcp` on
+  `PATH` (install with `cargo install rigorix-mcp`).
 - Hook: `[[hooks.PreToolUse]]` in `.codex/config.toml` runs the same
   `deny-migration.mjs` script Claude Code runs, so both agents share one
   enforcement boundary.
