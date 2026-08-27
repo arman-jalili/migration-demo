@@ -10,6 +10,26 @@ cd migration-demo
 node .rigorix/run-migration-demo.mjs
 ```
 
+## Run it with an agent
+
+The repo is wired for both Claude Code and Codex:
+
+- **Claude Code:** `.mcp.json` registers the `rigorix-mcp` server;
+  `.claude/settings.json` installs the `PreToolUse` hook and the permission
+  allowlist. Run `claude` in this directory and use the demo prompt below.
+- **Codex:** `.codex/config.toml` registers the same `rigorix-mcp` server
+  (absolute binary path, repo root as cwd), installs the same
+  `deny-migration.mjs` PreToolUse hook, and sets `approval_policy = "never"`
+  to mirror the Claude allowlist. `AGENTS.md` carries the runbook
+  instructions. The desktop app also has a user-level `rigorix-mcp` entry in
+  `~/.codex/config.toml` so the server shows up in the app's MCP list; after
+  changing MCP config, fully restart the app (or start a new task) so it
+  reloads configuration. Run `codex` in this directory and use the same
+  prompt.
+
+Both agents write code freely, get blocked from direct DB tools by the hook,
+and hand the migration to Rigorix via `rigorix_run` / `rigorix_approve_execution`.
+
 ---
 
 ## The one-minute story

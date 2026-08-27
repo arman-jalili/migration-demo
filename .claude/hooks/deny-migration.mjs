@@ -1,4 +1,4 @@
-// Claude Code PreToolUse hook — the "stick".
+// PreToolUse hook — the "stick" (shared by Claude Code and Codex).
 //
 // SCOPE (documented boundary — read this before relying on the hook):
 //   This hook governs AGENT-MEDIATED tool calls in Claude Code: it blocks
@@ -94,17 +94,22 @@ if (!isMutation) {
 }
 
 const reason = scriptReason ?? "direct DB-tool invocation";
+const message =
+  `Database migrations are critical operations governed by Rigorix (denied: ${reason}). ` +
+  "Do not run psql/docker/DB-client migration commands directly. " +
+  "Hand off to Rigorix: call rigorix_run with template_name 'db-migration' " +
+  "(or 'db-rollback' to restore), then rigorix_approve_execution when it pauses.";
+// Claude Code reads the deny decision from stdout JSON + exit 2; Codex reads
+// the blocking reason from stderr when the hook exits 2. Emit both so the
+// same script enforces the boundary in either agent.
 console.log(
   JSON.stringify({
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "deny",
-      permissionDecisionReason:
-        `Database migrations are critical operations governed by Rigorix (denied: ${reason}). ` +
-        "Do not run psql/docker/DB-client migration commands directly. " +
-        "Hand off to Rigorix: call rigorix_run with template_name 'db-migration' " +
-        "(or 'db-rollback' to restore), then rigorix_approve_execution when it pauses.",
+      permissionDecisionReason: message,
     },
   }),
 );
+console.error(message);
 process.exit(2);
